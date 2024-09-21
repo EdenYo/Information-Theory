@@ -3,41 +3,55 @@ import time
 
 
 def run_length_encode(data):
-    """Encodes the input data using Run-Length Encoding."""
+    """Encodes the input data using Run-Length Encoding and returns two lists: characters and their frequencies."""
     if not data:
-        return ""
+        return [], []
 
-    encoded = []
+    chars = []
+    frequencies = []
     count = 1
+
     for i in range(1, len(data)):
         if data[i] == data[i - 1]:
             count += 1
         else:
-            encoded.append(f"{data[i - 1]}{count}")
+            chars.append(data[i - 1])
+            frequencies.append(count)
             count = 1
-    encoded.append(f"{data[-1]}{count}")  # Append the last run
-    return ''.join(encoded)
+    chars.append(data[-1])  # Append the last run
+    frequencies.append(count)
+
+    return chars, frequencies
 
 
-def run_length_decode(encoded_data):
-    """Decodes the input data using Run-Length Encoding."""
-    decoded = []
-    count = "1"
+def prepare_frequencies_for_storage(frequencies):
+    """Prepares the frequencies for storage, separating multi-digit numbers with commas."""
+    freq_str = []
 
-    for char in encoded_data:
-        if char.isdigit():
-            count += char  # Build the count string
+    for freq in frequencies:
+        if freq >= 10:  # If frequency is two or more digits, separate it with a comma
+            freq_str.append(f',{freq},')
         else:
-            decoded.append(char * int(count))  # Repeat the character count times
-            count = ""
+            freq_str.append(str(freq))  # Single-digit frequencies stored without a comma
 
-    decoded_text = ''
-    chunk_size = 8000
-    for i in range(0, len(decoded), chunk_size):
-        chunk = decoded[i:i+chunk_size]
-        decoded_text += ''.join(chunk)
+    return ''.join(freq_str)
 
-    return decoded_text
+
+def run_length_decode(chars, frequency_string):
+    """Decodes the input characters and their frequencies back to the original data."""
+    decoded = []
+    frequency_index = 0
+
+    for i in range(len(chars)):
+        if frequency_string[frequency_index] != ',':
+            decoded.append(chars[i] * int(frequency_string[frequency_index]))
+            frequency_index += 1
+        else:
+            frequency_index += 1
+            decoded.append(chars[i] * int(frequency_string[frequency_index] + frequency_string[frequency_index + 1]))
+            frequency_index += 3
+
+    return ''.join(decoded)
 
 
 if __name__ == '__main__':
@@ -49,14 +63,32 @@ if __name__ == '__main__':
 
         # Compression
         compress_start_time = time.time()
-        compressed_data = run_length_encode(input_data)
-        with open("RLE_compressed.txt", 'w', encoding="utf-8") as file:
-            file.write(compressed_data)
+        chars, frequencies = run_length_encode(input_data)
+
+        # Prepare frequencies for storage
+        frequency_string = prepare_frequencies_for_storage(frequencies)
+
+        # Save chars and frequencies in separate files
+        with open("RLE_chars.txt", 'w', encoding="utf-8") as file:
+            file.write(''.join(chars))
+
+        with open("RLE_frequencies.txt", 'w', encoding="utf-8") as file:
+            file.write(frequency_string)
+
         print("---compress %s seconds ---" % (time.time() - compress_start_time))
 
         # Decompression
         decompress_start_time = time.time()
-        decompressed_data = run_length_decode(compressed_data)
+
+        # Read the characters and frequencies from the files
+        with open("RLE_chars.txt", 'r', encoding="utf-8") as file:
+            chars = list(file.read())
+
+        with open("RLE_frequencies.txt", 'r', encoding="utf-8") as file:
+            frequency_string = file.read()
+
+        decompressed_data = run_length_decode(chars, frequency_string)
         with open("RLE_decompressed.txt", 'w', encoding="utf-8") as file:
             file.write(decompressed_data)
+
         print("---decompress %s seconds ---" % (time.time() - decompress_start_time))
