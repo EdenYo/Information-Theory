@@ -3,11 +3,17 @@ from datetime import datetime
 import filecmp
 import arithmeticcoding
 import ppm_model
-
+import requests
 
 
 def main():
+    input_file_url = 'https://raw.githubusercontent.com/kzjeef/algs4/master/burrows-wheelers/testfile/dickens.txt'
+    response = requests.get(input_file_url)
+    input_data = response.text
     input_file = "input.txt"
+    with open(input_file, 'w', encoding="utf-8") as file:
+        file.write(input_data)
+
     compressed_file = "compressed_file.bin"
     decompressed_file = "decompressed_file.txt"
 
